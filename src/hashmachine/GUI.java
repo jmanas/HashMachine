@@ -17,9 +17,9 @@ import java.security.*;
 
 public class GUI
         implements ActionListener {
-    private static final String TITLE = "Hash Machine (8.6.2015)";
-    public static final String SRC_TEXT = "text";
-    public static final String SRC_FILE = "file";
+    private static final String TITLE = "Hash Machine (23.12.2015)";
+    private static final String SRC_TEXT = "text";
+    private static final String SRC_FILE = "file";
     private final JScrollPane scrollPane;
     private JComboBox<String> srcCombo;
     private JTextField textField;
@@ -62,7 +62,7 @@ public class GUI
         new GUI();
     }
 
-    GUI() {
+    private GUI() {
         frame = new JFrame(TITLE);
         frame.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
         Container container = frame.getContentPane();
@@ -76,8 +76,6 @@ public class GUI
     }
 
     private Component mkNorthPanel() {
-//        SpringLayout layout = new SpringLayout();
-//        JPanel box= new JPanel(layout);
         JPanel box = new JPanel();
         GroupLayout layout = new GroupLayout(box);
         box.setLayout(layout);
@@ -116,37 +114,6 @@ public class GUI
         checkButton = new JButton("check");
         checkButton.addActionListener(this);
         box.add(checkButton);
-
-/*
-        String N = SpringLayout.NORTH;
-        String S = SpringLayout.SOUTH;
-        String E = SpringLayout.EAST;
-        String W = SpringLayout.WEST;
-        String VC = SpringLayout.VERTICAL_CENTER;
-
-        layout.putConstraint(W, srcCombo, 5, W, box);
-        layout.putConstraint(N, srcCombo, 5, N, box);
-
-        layout.putConstraint(W, textField, 5, E, srcCombo);
-        layout.putConstraint(VC, textField, 0, VC, srcCombo);
-
-        layout.putConstraint(W, evalButton, 5, E, textField);
-        layout.putConstraint(VC, evalButton, 0, VC, textField);
-
-        layout.putConstraint(E, box, 5, E, evalButton);
-
-        layout.putConstraint(W, signField, 5, W, box);
-        layout.putConstraint(N, signField, 5, S, textField);
-        layout.putConstraint(E, signField, 0, E, textField);
-
-        layout.putConstraint(W, checkButton, 0, W, evalButton);
-        layout.putConstraint(VC, checkButton, 0, VC, signField);
-        layout.putConstraint(E, checkButton, 0, E, evalButton);
-
-        layout.putConstraint(S, box, 5, S, signField);
-
-        layout.putConstraint(N, checkButton, 0, N, signField);
-*/
 
         layout.setAutoCreateGaps(true);
         layout.setAutoCreateContainerGaps(true);
@@ -191,9 +158,13 @@ public class GUI
         LabelledItemPanel panel = new LabelledItemPanel();
 
         for (HashMethod method : METHODS) {
-            JTextField textField = new JTextField(40);
-            method.field = textField;
-            panel.addItem(method.name, textField);
+            method.checkBox = new JCheckBox();
+            method.checkBox.setSelected(true);
+            method.field = new JTextField(40);
+            JPanel p1 = new JPanel();
+            p1.add(method.checkBox);
+            p1.add(method.field);
+            panel.addItem(method.name, p1);
         }
 
         return panel;
@@ -212,13 +183,17 @@ public class GUI
                     return;
                 if (srcCombo.getSelectedItem().equals(SRC_TEXT)) {
                     byte[] bytes = text.getBytes("UTF-8");
-                    for (HashMethod method : METHODS)
-                        method.field.setText(eval(method, bytes));
+                    for (HashMethod method : METHODS) {
+                        if (method.checkBox.isSelected())
+                            method.field.setText(eval(method, bytes));
+                    }
 
                 } else {
                     File file = new File(text);
-                    for (HashMethod method : METHODS)
-                        method.field.setText(eval(method, file));
+                    for (HashMethod method : METHODS) {
+                        if (method.checkBox.isSelected())
+                            method.field.setText(eval(method, file));
+                    }
                 }
 
                 scrollPane.revalidate();
@@ -228,6 +203,8 @@ public class GUI
                 String sign = adapt(signField.getText());
                 if (sign.length() == 0)
                     return;
+                for (HashMethod method : METHODS)
+                    method.checkBox.setSelected(false);
                 if (matches(sign))
                     signField.setBackground(Color.GREEN);
                 else
@@ -241,8 +218,10 @@ public class GUI
 
     private boolean matches(String sign) {
         for (HashMethod method : METHODS) {
-            if (method.field.getText().equalsIgnoreCase(sign))
+            if (method.field.getText().equalsIgnoreCase(sign)) {
+                method.checkBox.setSelected(true);
                 return true;
+            }
         }
         return false;
     }
@@ -256,6 +235,7 @@ public class GUI
         return builder.toString();
     }
 
+    @SuppressWarnings("RedundantIfStatement")
     private boolean isHex(char ch) {
         if (Character.isDigit(ch))
             return true;
@@ -282,14 +262,16 @@ public class GUI
         try {
             MessageDigest messageDigest = MessageDigest.getInstance(method.javaName, "BC");
             byte[] bytes = new byte[1024];
-            InputStream in = new FileInputStream(file);
-            for (; ; ) {
-                int n = in.read(bytes);
-                if (n <= 0)
-                    break;
-                messageDigest.update(bytes, 0, n);
+            byte[] digest;
+            try (InputStream in = new FileInputStream(file)) {
+                for (; ; ) {
+                    int n = in.read(bytes);
+                    if (n <= 0)
+                        break;
+                    messageDigest.update(bytes, 0, n);
+                }
             }
-            byte[] digest = messageDigest.digest();
+            digest = messageDigest.digest();
             return Hex.toHexString(digest);
         } catch (NoSuchAlgorithmException e) {
             return "No Such Algorithm";
@@ -301,6 +283,7 @@ public class GUI
         final String javaName;
 
         JTextField field;
+        JCheckBox checkBox;
 
         HashMethod(String name, String javaName) {
             this.name = name;
