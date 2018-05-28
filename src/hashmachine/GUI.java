@@ -6,7 +6,6 @@ import javax.crypto.Mac;
 import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
 import javax.swing.*;
-import javax.xml.bind.DatatypeConverter;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -335,7 +334,7 @@ public class GUI
         try {
             MessageDigest messageDigest = MessageDigest.getInstance(method.javaName, "BC");
             byte[] digest = messageDigest.digest(textBytes);
-            return DatatypeConverter.printHexBinary(digest);
+            return printHexBinary(digest);
         } catch (NoSuchAlgorithmException e) {
             return "No Such Algorithm";
         }
@@ -350,12 +349,19 @@ public class GUI
             mac.init(secretKey);
             mac.update(textBytes);
             byte[] hmac = mac.doFinal();
-            return DatatypeConverter.printHexBinary(hmac);
+            return printHexBinary(hmac);
         } catch (NoSuchAlgorithmException e) {
             return "No Such Algorithm";
         } catch (InvalidKeyException e) {
             return "Invalid key exception";
         }
+    }
+
+    private static String printHexBinary(byte[] bytes) {
+        StringBuilder builder = new StringBuilder();
+        for (byte b: bytes)
+            builder.append(String.format("%02x", b));
+        return builder.toString();
     }
 
     private String eval(HashMethod method, File file)
@@ -372,7 +378,7 @@ public class GUI
                 }
             }
             byte[] digest = messageDigest.digest();
-            return DatatypeConverter.printHexBinary(digest);
+            return printHexBinary(digest);
         } catch (NoSuchAlgorithmException e) {
             return "No Such Algorithm";
         }
@@ -395,7 +401,7 @@ public class GUI
                 }
             }
             byte[] hmac = mac.doFinal();
-            return DatatypeConverter.printHexBinary(hmac);
+            return printHexBinary(hmac);
         } catch (NoSuchAlgorithmException e) {
             return "No Such Algorithm";
         } catch (InvalidKeyException e) {
@@ -417,7 +423,7 @@ public class GUI
                 }
             }
             byte[] digest = messageDigest.digest();
-            return DatatypeConverter.printHexBinary(digest);
+            return printHexBinary(digest);
         } catch (NoSuchAlgorithmException e) {
             return "No Such Algorithm";
         }
